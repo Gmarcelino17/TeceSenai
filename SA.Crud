@@ -1,0 +1,21 @@
+import mysql.connector
+
+# Conectando ao banco de dados
+def conectar_banco():
+    return mysql.connector.connect(
+        host="localhost",
+        user="root",
+        password="Batmaca007#Ninbat007#",
+        database="sa_estoque"
+    )
+
+
+def cadastrar_usuario(nome, usuario, cpf, telefone, senha, tipo_usuario, cadastro_root):
+    conn = mysql.connector.connect(host="localhost", user="root", password="Batmaca007#Ninbat007#", database="sa_estoque")
+    cursor = conn.cursor()
+
+    cursor.execute("INSERT INTO tb_usuarios (nome, usuario, cpf, nm_telefone, senha, tipo) VALUES (%s, %s, %s, %s, %s, %s)",
+                   (nome, usuario, cpf, telefone, senha, tipo_usuario))
+
+    conn.commit()
+    conn.close()
