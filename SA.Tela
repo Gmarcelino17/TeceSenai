@@ -141,3 +141,147 @@ entry_senha.pack(pady=5)
 
 tk.Button(root, text="Login", command=login).pack(pady=10)
 tk.Button(root, text="Não tem cadastro? Cadastre-se", command=lambda: abrir_cadastro(root)).pack(pady=10)
+
+class TelaEstoque:
+    def __init__(self, root):
+        self.root = root
+        self.ver_estoque()
+
+    def ver_estoque(self):
+        janela = tk.Toplevel(self.root)
+        janela.title("Controle de Estoque")
+        janela.geometry("1200x500")
+
+        # Função para carregar dados
+        def carregar_dados():
+            for item in tabela.get_children():
+                tabela.delete(item)
+            produtos = carregar_produtos()
+            for produto in produtos:
+                tabela.insert("", tk.END, values=produto)
+
+        # Função para adicionar produto
+        def adicionar():
+            nome = entry_nome.get()
+            cor = entry_cor.get()
+            preco = entry_preco.get()
+            quantidade = entry_quantidade.get()
+            categoria = combobox_categoria.get()  # Aqui deve vir o nome da categoria (ex: 'Algodão', 'Poliéster')
+    
+            # Verifica se os campos estão preenchidos
+            if not (nome and cor and preco and quantidade and categoria):
+                messagebox.showerror("Erro", "Todos os campos são obrigatórios!")
+                return
+    
+            try:
+                preco = float(preco)  # Convertendo para float
+                quantidade = int(quantidade)  # Convertendo para inteiro
+            except ValueError:
+                messagebox.showerror("Erro", "Preço e Quantidade devem ser numéricos!")
+                return
+    
+            # Chama a função para adicionar o produto
+            adicionar_produto(nome, cor, preco, quantidade, categoria)
+            messagebox.showinfo("Sucesso", "Produto adicionado com sucesso!")
+            carregar_dados()
+
+        def alterar():
+            try:
+                item = tabela.selection()[0]
+                produto = tabela.item(item, "values")
+                produto_id = produto[0]
+                nome = entry_nome.get() or produto[1]
+                cor = entry_cor.get() or produto[2]
+                preco = entry_preco.get() or produto[3]
+                quantidade = entry_quantidade.get() or produto[4]
+                alterar_produto(produto_id, nome, cor, float(preco), int(quantidade))
+                carregar_dados()
+                messagebox.showinfo("Sucesso", "Produto alterado com sucesso!")
+            except IndexError:
+                messagebox.showerror("Erro", "Nenhum produto selecionado!")
+
+        # Função para excluir produto
+        def excluir():
+            try:
+                item = tabela.selection()[0]
+                produto = tabela.item(item, "values")
+                excluir_produto(produto[0])
+                carregar_dados()
+                messagebox.showinfo("Sucesso", "Produto excluído com sucesso!")
+            except IndexError:
+                messagebox.showerror("Erro", "Nenhum produto selecionado!")
+        
+        def vender():
+            try:
+                item = tabela.selection()[0]
+                produto = tabela.item(item, "values")
+                produto_id = produto[0]
+                quantidade_atual = int(produto[4])  # Quantidade atual do produto na tabela
+
+                # Solicitar a quantidade a ser vendida
+                quantidade_venda = int(entry_quantidade.get())  # A entrada que o usuário digita
+
+                # Verificar se a quantidade solicitada não é maior que a disponível
+                if quantidade_venda > quantidade_atual:
+                    messagebox.showerror("Erro", "Quantidade de venda excede o estoque disponível!")
+                    return
+
+                # Subtrair a quantidade da tabela
+                nova_quantidade = quantidade_atual - quantidade_venda
+
+                # Atualizar a quantidade no banco de dados
+                atualizar_quantidade(produto_id, nova_quantidade)
+
+                # Exibir mensagem de sucesso
+                messagebox.showinfo("Sucesso", f"{quantidade_venda} unidades vendidas com sucesso!")
+
+                # Atualizar a tabela
+                carregar_dados()
+            except IndexError:
+                messagebox.showerror("Erro", "Nenhum produto selecionado!")
+            except Exception as e:
+                messagebox.showerror("Erro", f"Erro ao vender produto: {e}")
+        
+        def fechar_janela(janela):
+            janela.destroy()
+
+        # Layout
+        tabela = ttk.Treeview(janela, columns=("ID", "Nome", "Cor", "Preço", "Quantidade", "Categoria"), show="headings")
+        tabela.heading("ID", text="ID")
+        tabela.heading("Nome", text="Nome")
+        tabela.heading("Cor", text="Cor")
+        tabela.heading("Preço", text="Preço (R$)")
+        tabela.heading("Quantidade", text="Quantidade")
+        tabela.heading("Categoria", text="Categoria")
+        tabela.pack(fill=tk.BOTH, expand=True)
+
+        frame = tk.Frame(janela)
+        frame.pack(fill=tk.X)
+
+        tk.Label(frame, text="Nome:").grid(row=0, column=0)
+        entry_nome = tk.Entry(frame)
+        entry_nome.grid(row=0, column=1)
+
+        tk.Label(frame, text="Cor:").grid(row=0, column=2)
+        entry_cor = tk.Entry(frame)
+        entry_cor.grid(row=0, column=3)
+
+        tk.Label(frame, text="Preço:").grid(row=1, column=0)
+        entry_preco = tk.Entry(frame)
+        entry_preco.grid(row=1, column=1)
+
+        tk.Label(frame, text="Quantidade:").grid(row=1, column=2)
+        entry_quantidade = tk.Entry(frame)
+        entry_quantidade.grid(row=1, column=3)
+
+        tk.Label(frame, text="Categoria:").grid(row=2, column=0)
+        combobox_categoria = ttk.Combobox(frame, values=obter_categorias(), state="readonly")
+        combobox_categoria.grid(row=2, column=1)
+
+        tk.Button(janela, text="Adicionar", command=adicionar).pack(side=tk.LEFT)
+        tk.Button(janela, text="Alterar", command=alterar).pack(side=tk.LEFT)
+        tk.Button(janela, text="Excluir", command=excluir).pack(side=tk.LEFT)
+        tk.Button(janela, text="Vender", command=vender).pack(side=tk.LEFT)
+        tk.Button(janela, text="Sair", command=lambda: fechar_janela(janela)).pack(side=tk.LEFT)  # Corrigido aqui
+
+        carregar_dados()
